@@ -1,20 +1,132 @@
-ï»¿// MemoryPool.cpp : æ­¤æ–‡ä»¶åŒ…å« "main" å‡½æ•°ã€‚ç¨‹åºæ‰§è¡Œå°†åœ¨æ­¤å¤„å¼€å§‹å¹¶ç»“æŸã€‚
-//
-
+#include "MemoryPool.h"
 #include <iostream>
+#include <assert.h>
 
-int main()
+MemoryPool::MemoryPool(size_t BlockSize)
+	:m_blockSize(BlockSize)
+	,m_slotSize(0)
+	, m_firstBlock(nullptr)
+	, m_currentSlot(nullptr)
+	, m_freeList(nullptr)
+	, m_lastSlot(nullptr)
+{}
+MemoryPool::~MemoryPool()
 {
-    std::cout << "Hello World!\n";
+	Slot* curr = m_firstBlock;
+	while (curr)
+	{
+		Slot* next = curr->next;
+		operator delete(reinterpret_cast<void*>(curr));
+		curr = next;
+	}
 }
 
-// è¿è¡Œç¨‹åº: Ctrl + F5 æˆ–è°ƒè¯• >â€œå¼€å§‹æ‰§è¡Œ(ä¸è°ƒè¯•)â€èœå•
-// è°ƒè¯•ç¨‹åº: F5 æˆ–è°ƒè¯• >â€œå¼€å§‹è°ƒè¯•â€èœå•
+void MemoryPool::init(size_t slotSize)
+{
+	//assert(slotSize > 0);
+	if (slotSize < 0) {
+		std::cout<< "MemoryPool::init error: slotSize < 0" << std::endl;
+		return;
+	}
 
-// å…¥é—¨ä½¿ç”¨æŠ€å·§: 
-//   1. ä½¿ç”¨è§£å†³æ–¹æ¡ˆèµ„æºç®¡ç†å™¨çª—å£æ·»åŠ /ç®¡ç†æ–‡ä»¶
-//   2. ä½¿ç”¨å›¢é˜Ÿèµ„æºç®¡ç†å™¨çª—å£è¿æ¥åˆ°æºä»£ç ç®¡ç†
-//   3. ä½¿ç”¨è¾“å‡ºçª—å£æŸ¥çœ‹ç”Ÿæˆè¾“å‡ºå’Œå…¶ä»–æ¶ˆæ¯
-//   4. ä½¿ç”¨é”™è¯¯åˆ—è¡¨çª—å£æŸ¥çœ‹é”™è¯¯
-//   5. è½¬åˆ°â€œé¡¹ç›®â€>â€œæ·»åŠ æ–°é¡¹â€ä»¥åˆ›å»ºæ–°çš„ä»£ç æ–‡ä»¶ï¼Œæˆ–è½¬åˆ°â€œé¡¹ç›®â€>â€œæ·»åŠ ç°æœ‰é¡¹â€ä»¥å°†ç°æœ‰ä»£ç æ–‡ä»¶æ·»åŠ åˆ°é¡¹ç›®
-//   6. å°†æ¥ï¼Œè‹¥è¦å†æ¬¡æ‰“å¼€æ­¤é¡¹ç›®ï¼Œè¯·è½¬åˆ°â€œæ–‡ä»¶â€>â€œæ‰“å¼€â€>â€œé¡¹ç›®â€å¹¶é€‰æ‹© .sln æ–‡ä»¶
+	m_slotSize = (slotSize < sizeof(Slot*)) ? sizeof(Slot*) : slotSize;
+	m_firstBlock = nullptr;
+	m_currentSlot = nullptr;
+	m_freeList = nullptr;
+	m_lastSlot = nullptr;
+}
+
+void* MemoryPool::allocate()
+{
+	//ÏÈ³¢ÊÔ´Ó¿ÕÏĞÁ´±íÖĞ·ÖÅäÄÚ´æ²Û
+	Slot* slot = popFreeList();
+	if (slot != nullptr) {
+		return slot;
+	}
+	//¿ÕÏĞÁ´±íÎª¿Õ£¬´Óµ±Ç°ÄÚ´æ¿éÖĞ·ÖÅäÄÚ´æ²Û
+	std::lock_guard<std::mutex> lock(m_mutexForBlock);
+	if (m_currentSlot >= m_lastSlot) {
+		//µ±Ç°ÄÚ´æ¿éÒÑÓÃÍê£¬ÉêÇëĞÂµÄÄÚ´æ¿é
+		allocateNewBlock();
+	}	
+	slot = m_currentSlot;
+	m_currentSlot += m_slotSize / sizeof(Slot);
+	return slot;
+}
+
+Slot* MemoryPool::popFreeList()
+{
+	while (true)
+	{
+		//memory_order_acquire ±íÊ¾¸Ã²Ù×÷¡°»ñÈ¡¡±ÁË¹²ÏíÄÚ´æµÄ¿É¼ûĞÔ±£Ö¤£º
+		//ÆäËûÏß³ÌÔÚ´ËÖ®Ç°¶Ô¸ÃÄÚ´æ¿éµÄĞŞ¸Ä£¬¶Ôµ±Ç°Ïß³ÌÊÇ¿É¼ûµÄ¡£
+		Slot* oldHead = m_freeList.load(std::memory_order_acquire);
+		if (oldHead == nullptr)
+			return nullptr;   // ¿ÕÏĞÁ´±íÎª¿Õ£¬·µ»Ø nullptr
+		Slot* newHead = nullptr;
+		try {
+			newHead = oldHead->next.load(std::memory_order_relaxed);
+		}
+		catch (...) {
+			continue; // Èç¹û¼ÓÔØ next Ö¸ÕëÊ±·¢ÉúÒì³££¬ÖØĞÂ³¢ÊÔ
+		}
+
+		//Èç¹û m_freeList µ±Ç°ÖµµÈÓÚ oldHead£¬Ôò°ÑËü¸ÄÎª newHead ²¢·µ»Ø true£»
+		//·ñÔò²»ĞŞ¸Ä m_freeList¡¢·µ»Ø false£¬²¢°Ñ oldHead ¸üĞÂÎª m_freeList µÄµ±Ç°Öµ
+		if (m_freeList.compare_exchange_weak(oldHead, newHead,
+			std::memory_order_acquire,
+			std::memory_order_relaxed)) {
+			return oldHead;
+		}	
+	}
+}
+
+void MemoryPool::allocateNewBlock()
+{
+	//Í·²å·¨²åÈëĞÂµÄÄÚ´æ¿é
+	void* newBlock = operator new(m_blockSize);
+	reinterpret_cast<Slot*>(newBlock)->next = m_firstBlock;
+	m_firstBlock = reinterpret_cast<Slot*>(newBlock);
+
+	//Ìø¹ı block ¿ªÍ·ÄÇ²¿·ÖÓÃÓÚ¡°Á´±íÁ´½Ó¡±µÄÖ¸ÕëÇøÓò£¬
+	//µÃµ½ block µÄ¡°ÕıÎÄ²¿·Ö¡±ÆğÊ¼µØÖ·¡£
+	char* body = reinterpret_cast<char*>(newBlock) + sizeof(Slot*);
+
+	//ĞèÒªÌø¹ı¶àÉÙ×Ö½Ú²ÅÄÜ¶ÔÆë
+	size_t paddingSize = padPointer(body, m_slotSize);
+
+	//¼ÆËã³öµÚÒ»¸ö¡°¿ÉÓÃ slot¡±µÄÆğÊ¼Î»ÖÃ
+	m_currentSlot = reinterpret_cast<Slot*>(body + paddingSize);
+
+	//×îºóÒ»¸ö slot µÄÆğÊ¼µØÖ·
+	m_lastSlot = reinterpret_cast<Slot*>(
+		reinterpret_cast<char*>(newBlock) + m_blockSize - m_slotSize + 1);
+}
+
+//¼ÆËã´Óµ±Ç°µØÖ· p ¿ªÊ¼£¬µ½´ï¡°ÏÂÒ»¸ö¶ÔÆë±ß½ç¡±ËùĞèÒªÌø¹ıµÄ×Ö½ÚÊı¡£
+size_t MemoryPool::padPointer(char* p, size_t alignment)
+{
+	size_t result = reinterpret_cast<size_t>(p);
+	return alignment - (result % alignment);
+}
+
+
+bool MemoryPool::pushFreeList(Slot* slot) {
+	while (true) {
+		Slot* oldHead = m_freeList.load(std::memory_order_relaxed);
+		slot->next.store(oldHead, std::memory_order_relaxed);
+		// ³¢ÊÔ½«ĞÂ½ÚµãÉèÖÃÎªÍ·½Úµã
+		if (m_freeList.compare_exchange_weak(oldHead, slot,
+			std::memory_order_release, std::memory_order_relaxed)) {
+			return true;
+		}
+		//Ê§°ÜÔòÖØĞÂ³¢ÊÔ
+	}
+}
+
+void MemoryPool::deallocate(void* ptr) {
+	if (!ptr) return;
+
+	Slot* slot = reinterpret_cast<Slot*>(ptr);
+	pushFreeList(slot);
+}
