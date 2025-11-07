@@ -11,6 +11,7 @@ struct Slot {
 };
 
 
+
 class MemoryPool
 {
 	public:

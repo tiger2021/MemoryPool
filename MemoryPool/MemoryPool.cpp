@@ -58,11 +58,15 @@ void* MemoryPool::allocate()
 
 Slot* MemoryPool::popFreeList()
 {
+	//下面这个锁是自己加的，要不然在多线程环境下会出现问题，后面要删除
+	std::lock_guard<std::mutex> lock(m_mutexForBlock);
+
 	while (true)
 	{
 		//memory_order_acquire 表示该操作“获取”了共享内存的可见性保证：
 		//其他线程在此之前对该内存块的修改，对当前线程是可见的。
 		Slot* oldHead = m_freeList.load(std::memory_order_acquire);
+		
 		if (oldHead == nullptr)
 			return nullptr;   // 空闲链表为空，返回 nullptr
 		Slot* newHead = nullptr;
@@ -120,7 +124,7 @@ size_t MemoryPool::padPointer(char* p, size_t alignment)
 
 bool MemoryPool::pushFreeList(Slot* slot) {
 	while (true) {
-		Slot* oldHead = m_freeList.load(std::memory_order_relaxed);
+		Slot* oldHead = m_freeList.load(std::memory_order_release);
 		slot->next.store(oldHead, std::memory_order_relaxed);
 		// 尝试将新节点设置为头节点
 		if (m_freeList.compare_exchange_weak(oldHead, slot,

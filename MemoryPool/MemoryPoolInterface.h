@@ -4,7 +4,7 @@
 template<typename T, typename... Args>
 T* newElement(Args&&... args) {
 	T* p = nullptr;
-	p = reinterpret_cast<T*>(HashBucket::useMemory(sizeof(T))));
+	p = reinterpret_cast<T*>(HashBucket::useMemory(sizeof(T)));
 	if (p != nullptr) {
 		// 在分配的内存上构造对象
 		//这是 C++ 中构造对象的低层写法之一，用于在已经分配好的原始内存地址上构造对象。

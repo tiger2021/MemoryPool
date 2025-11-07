@@ -12,9 +12,6 @@
 class HashBucket
 {
 private:
-	HashBucket() {}
-	~HashBucket() {}
-
 	static void initMemoryPool() {
 		for (int i = 0; i < MEMORY_POOL_NUM; ++i) {
 			getMemoryPool(i).init((i + 1) * SLOT_BASE_SIZE);
@@ -49,8 +46,8 @@ private:
 			std::cout << "HashBucket::freeMemory error: ptr is nullptr" << std::endl;
 			return;
 		}
-		if (size < SLOT_BASE_SIZE) {
-			std::cout << "HashBucket::freeMemory error: size < SLOT_BASE_SIZE" << std::endl;
+		if (size <0) {
+			std::cout << "HashBucket::freeMemory error: size < 0" << std::endl;
 			return;
 		}
 		if (size > MAX_SLOT_SIZE) {
