@@ -24,8 +24,8 @@ MemoryPool::~MemoryPool()
 void MemoryPool::init(size_t slotSize)
 {
 	//assert(slotSize > 0);
-	if (slotSize < 0) {
-		std::cout<< "MemoryPool::init error: slotSize < 0" << std::endl;
+	if (slotSize < sizeof(Slot*)) {
+		std::cout<< "MemoryPool::init error: slotSize < sizeof(Slot*)" << std::endl;
 		return;
 	}
 
@@ -50,6 +50,8 @@ void* MemoryPool::allocate()
 		allocateNewBlock();
 	}	
 	slot = m_currentSlot;
+
+	//C++ 的指针加法是按 元素个数（Slot） 移动，而不是按字节移动
 	m_currentSlot += m_slotSize / sizeof(Slot);
 	return slot;
 }
@@ -90,6 +92,8 @@ void MemoryPool::allocateNewBlock()
 
 	//跳过 block 开头那部分用于“链表链接”的指针区域，
 	//得到 block 的“正文部分”起始地址。
+	//char* 是通用的“字节指针”
+	//char 的大小是固定的：1 字节
 	char* body = reinterpret_cast<char*>(newBlock) + sizeof(Slot*);
 
 	//需要跳过多少字节才能对齐
@@ -106,7 +110,10 @@ void MemoryPool::allocateNewBlock()
 //计算从当前地址 p 开始，到达“下一个对齐边界”所需要跳过的字节数。
 size_t MemoryPool::padPointer(char* p, size_t alignment)
 {
+	//把指针 p 转换为整数类型（地址值）。
 	size_t result = reinterpret_cast<size_t>(p);
+
+	//离下一个对齐边界”还差多少字节,计算机中最小的可寻址存储单位(字节)
 	return alignment - (result % alignment);
 }
 
