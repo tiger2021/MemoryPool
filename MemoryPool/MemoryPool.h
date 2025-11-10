@@ -23,7 +23,7 @@ class MemoryPool
 
 	void allocateNewBlock();
 	size_t padPointer(char* p, size_t alignment);
-	int main_int = 25;
+	int main_int = 26;
 	// 使用CAS操作进行无锁入队和出队
 	bool pushFreeList(Slot* slot);
 	void deallocate(void* ptr);
