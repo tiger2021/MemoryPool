@@ -2,7 +2,7 @@
 #include <thread>
 #include <vector>
 
-#include "MemoryPoolInterface.h"
+#include "./version1/MemoryPoolInterface.h"
 
 // 测试用例
 class P1 

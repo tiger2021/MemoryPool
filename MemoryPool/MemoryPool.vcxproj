@@ -124,13 +124,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="MemoryPool.cpp" />
     <ClCompile Include="UnitTest.cpp" />
+    <ClCompile Include="version1\MemoryPool.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="HashBucket.h" />
-    <ClInclude Include="MemoryPool.h" />
-    <ClInclude Include="MemoryPoolInterface.h" />
+    <ClInclude Include="version1\HashBucket.h" />
+    <ClInclude Include="version1\MemoryPool.h" />
+    <ClInclude Include="version1\MemoryPoolInterface.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
