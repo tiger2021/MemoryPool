@@ -12,6 +12,9 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="version2">
+      <UniqueIdentifier>{cea5b914-5ad2-4956-8fa7-dace7f528739}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="version1\MemoryPool.cpp">
@@ -28,6 +31,9 @@
     </ClInclude>
     <ClInclude Include="version1\MemoryPoolInterface.h">
       <Filter>version1\头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="version2\Common.h">
+      <Filter>version2</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

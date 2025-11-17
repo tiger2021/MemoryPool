@@ -131,6 +131,7 @@
     <ClInclude Include="version1\HashBucket.h" />
     <ClInclude Include="version1\MemoryPool.h" />
     <ClInclude Include="version1\MemoryPoolInterface.h" />
+    <ClInclude Include="version2\Common.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
