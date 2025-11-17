@@ -13,7 +13,13 @@
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
     <Filter Include="version2">
-      <UniqueIdentifier>{cea5b914-5ad2-4956-8fa7-dace7f528739}</UniqueIdentifier>
+      <UniqueIdentifier>{6e640e4c-ce2e-45a5-afaf-c1bf311cd154}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="version2\头文件">
+      <UniqueIdentifier>{e1d9b946-c404-4f65-ac89-e2bc3c12cfad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="version2\源文件">
+      <UniqueIdentifier>{6bad77b6-1067-45e7-8187-4defa861b796}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -21,6 +27,9 @@
       <Filter>version1\源文件</Filter>
     </ClCompile>
     <ClCompile Include="UnitTest.cpp" />
+    <ClCompile Include="version2\ThreadCache.cpp">
+      <Filter>version2\源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="version1\HashBucket.h">
@@ -33,7 +42,10 @@
       <Filter>version1\头文件</Filter>
     </ClInclude>
     <ClInclude Include="version2\Common.h">
-      <Filter>version2</Filter>
+      <Filter>version2\头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="version2\ThreadCache.h">
+      <Filter>version2\头文件</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

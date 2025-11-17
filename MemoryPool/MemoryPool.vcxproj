@@ -126,12 +126,14 @@
   <ItemGroup>
     <ClCompile Include="UnitTest.cpp" />
     <ClCompile Include="version1\MemoryPool.cpp" />
+    <ClCompile Include="version2\ThreadCache.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="version1\HashBucket.h" />
     <ClInclude Include="version1\MemoryPool.h" />
     <ClInclude Include="version1\MemoryPoolInterface.h" />
     <ClInclude Include="version2\Common.h" />
+    <ClInclude Include="version2\ThreadCache.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
