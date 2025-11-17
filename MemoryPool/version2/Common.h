@@ -1,28 +1,28 @@
-#pragma once
+ï»¿#pragma once
 #include <utility>
 
-constexpr size_t ALIGNMENT = 8;   //¶ÔÆë´óĞ¡
+constexpr size_t ALIGNMENT = 8;   //å¯¹é½å¤§å°
 constexpr size_t MAX_BYTES = 256 * 1024; //256KB
-constexpr size_t FREE_LIST_NUM = MAX_BYTES / ALIGNMENT; //×ÔÓÉÁ´±íÊıÁ¿	
+constexpr size_t FREE_LIST_NUM = MAX_BYTES / ALIGNMENT; //è‡ªç”±é“¾è¡¨æ•°é‡	
 
-//ÄÚ´æ¿éÍ·²¿ĞÅÏ¢
+//å†…å­˜å—å¤´éƒ¨ä¿¡æ¯
 struct BlockHeader {
-	size_t size;          //ÄÚ´æ¿é´óĞ¡
-	bool inUse;        //ÄÚ´æ¿éÊÇ·ñ±»Ê¹ÓÃ
-	BlockHeader* next;   //Ö¸ÏòÏÂÒ»¸öÄÚ´æ¿é
+	size_t size;          //å†…å­˜å—å¤§å°
+	bool inUse;        //å†…å­˜å—æ˜¯å¦è¢«ä½¿ç”¨
+	BlockHeader* next;   //æŒ‡å‘ä¸‹ä¸€ä¸ªå†…å­˜å—
 };
 
-//´óĞ¡Àà¹ÜÀí
+//å¤§å°ç±»ç®¡ç†
 class SizeClass {
 public:
 	static size_t roundUp(size_t bytes) {
-		return (bytes + ALIGNMENT - 1) & ~(ALIGNMENT - 1);   //ÏòÉÏÈ¡Õûµ½¶ÔÆë´óĞ¡,~È¡·´£¬¶ş½øÖÆ×îºóÈıÎ»Çå0
+		return (bytes + ALIGNMENT - 1) & ~(ALIGNMENT - 1);   //å‘ä¸Šå–æ•´åˆ°å¯¹é½å¤§å°,~å–åï¼ŒäºŒè¿›åˆ¶æœ€åä¸‰ä½æ¸…0
 	}
 
 	static size_t getFreeListIndex(size_t bytes) {
-		//È·±£bytesÖÁÉÙÎªALIGNMENT
+		//ç¡®ä¿bytesè‡³å°‘ä¸ºALIGNMENT
 		bytes = std::max(bytes, ALIGNMENT);
 
-		return (bytes + ALIGNMENT - 1) / ALIGNMENT - 1; //0¶ÔÓ¦8×Ö½Ú£¬1¶ÔÓ¦16×Ö½Ú
+		return (bytes + ALIGNMENT - 1) / ALIGNMENT - 1; //0å¯¹åº”8å­—èŠ‚ï¼Œ1å¯¹åº”16å­—èŠ‚
 	}
-}
+};

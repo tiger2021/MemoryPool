@@ -1,51 +1,90 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
-    <Filter Include="version1">
-      <UniqueIdentifier>{a0c8c28a-7d45-41eb-9758-a15d67c22cf1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="version1\头文件">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="version1\源文件">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="version2">
-      <UniqueIdentifier>{6e640e4c-ce2e-45a5-afaf-c1bf311cd154}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="version2\头文件">
-      <UniqueIdentifier>{e1d9b946-c404-4f65-ac89-e2bc3c12cfad}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="version2\源文件">
-      <UniqueIdentifier>{6bad77b6-1067-45e7-8187-4defa861b796}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="version1\MemoryPool.cpp">
-      <Filter>version1\源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="UnitTest.cpp" />
-    <ClCompile Include="version2\ThreadCache.cpp">
-      <Filter>version2\源文件</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="version1\HashBucket.h">
-      <Filter>version1\头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="version1\MemoryPool.h">
-      <Filter>version1\头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="version1\MemoryPoolInterface.h">
-      <Filter>version1\头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="version2\Common.h">
-      <Filter>version2\头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="version2\ThreadCache.h">
-      <Filter>version2\头文件</Filter>
-    </ClInclude>
-  </ItemGroup>
+
+	<!--============================-->
+	<!--          Filters           -->
+	<!--============================-->
+	<ItemGroup>
+
+		<!-- version1 (父级，必须补 Extensions) -->
+		<Filter Include="version1">
+			<UniqueIdentifier>{a0c8c28a-7d45-41eb-9758-a15d67c22cf1}</UniqueIdentifier>
+			<Extensions></Extensions>
+		</Filter>
+
+		<Filter Include="version1\头文件">
+			<UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+			<Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+		</Filter>
+
+		<Filter Include="version1\源文件">
+			<UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+			<Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+		</Filter>
+
+
+		<!-- version2 (父级，必须补 Extensions) -->
+		<Filter Include="version2">
+			<UniqueIdentifier>{6e640e4c-ce2e-45a5-afaf-c1bf311cd154}</UniqueIdentifier>
+			<Extensions></Extensions>
+		</Filter>
+
+		<Filter Include="version2\头文件">
+			<UniqueIdentifier>{e1d9b946-c404-4f65-ac89-e2bc3c12cfad}</UniqueIdentifier>
+			<Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+		</Filter>
+
+		<Filter Include="version2\源文件">
+			<UniqueIdentifier>{6bad77b6-1067-45e7-8187-4defa861b796}</UniqueIdentifier>
+			<Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+		</Filter>
+
+	</ItemGroup>
+
+
+	<!--============================-->
+	<!--         Source Files       -->
+	<!--============================-->
+	<ItemGroup>
+
+		<ClCompile Include="version1\MemoryPool.cpp">
+			<Filter>version1\源文件</Filter>
+		</ClCompile>
+
+		<ClCompile Include="UnitTest.cpp" />
+
+		<ClCompile Include="version2\ThreadCache.cpp">
+			<Filter>version2\源文件</Filter>
+		</ClCompile>
+
+	</ItemGroup>
+
+
+	<!--============================-->
+	<!--        Header Files        -->
+	<!--============================-->
+	<ItemGroup>
+
+		<ClInclude Include="version1\HashBucket.h">
+			<Filter>version1\头文件</Filter>
+		</ClInclude>
+
+		<ClInclude Include="version1\MemoryPool.h">
+			<Filter>version1\头文件</Filter>
+		</ClInclude>
+
+		<ClInclude Include="version1\MemoryPoolInterface.h">
+			<Filter>version1\头文件</Filter>
+		</ClInclude>
+
+		<ClInclude Include="version2\Common.h">
+			<Filter>version2\头文件</Filter>
+		</ClInclude>
+
+		<ClInclude Include="version2\ThreadCache.h">
+			<Filter>version2\头文件</Filter>
+		</ClInclude>
+
+	</ItemGroup>
+
 </Project>
