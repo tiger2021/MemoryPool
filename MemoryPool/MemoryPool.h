@@ -23,14 +23,10 @@ class MemoryPool
 
 	void allocateNewBlock();
 	size_t padPointer(char* p, size_t alignment);
-	int main_code = 26;
-	int dev_code = 250;
-	int main_data = 250;
+
 	// 使用CAS操作进行无锁入队和出队
 	bool pushFreeList(Slot* slot);
 	void deallocate(void* ptr);
-	
-
 private:
 	size_t m_blockSize;   //从操作系统/堆一次性申请的大块连续内存的字节数
 	size_t m_slotSize;    // MemoryPool 管理的每个分配单元的大小（固定、对齐后的大小）。

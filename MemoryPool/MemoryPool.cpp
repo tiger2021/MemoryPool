@@ -71,7 +71,7 @@ Slot* MemoryPool::popFreeList()
 			return nullptr;   // 空闲链表为空，返回 nullptr
 		Slot* newHead = nullptr;
 		try {
-			newHead = oldHead->next.load(std::memory_order_relaxed);
+			newHead = oldHead->next.load();
 		}
 		catch (...) {
 			continue; // 如果加载 next 指针时发生异常，重新尝试
@@ -83,7 +83,9 @@ Slot* MemoryPool::popFreeList()
 			std::memory_order_acquire,
 			std::memory_order_relaxed)) {
 			return oldHead;
-		}	
+		}else {
+			return nullptr; // 失败则返回 nullptr
+		}
 	}
 }
 
@@ -91,6 +93,8 @@ void MemoryPool::allocateNewBlock()
 {
 	//头插法插入新的内存块
 	void* newBlock = operator new(m_blockSize);
+	
+	//将新内存块的“链表链接”指针指向当前的第一个内存块
 	reinterpret_cast<Slot*>(newBlock)->next = m_firstBlock;
 	m_firstBlock = reinterpret_cast<Slot*>(newBlock);
 
