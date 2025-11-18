@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <utility>
+#include <assert.h>
 
 constexpr size_t ALIGNMENT = 8;   //对齐大小
 constexpr size_t MAX_BYTES = 256 * 1024; //256KB
@@ -15,11 +16,16 @@ struct BlockHeader {
 //大小类管理
 class SizeClass {
 public:
+	//先将申请内存的大小转换为8的倍数向上取整
 	static size_t roundUp(size_t bytes) {
 		return (bytes + ALIGNMENT - 1) & ~(ALIGNMENT - 1);   //向上取整到对齐大小,~取反，二进制最后三位清0
 	}
 
+	//计算申请的内存从ThreadCache自由链表的哈希桶的下标
 	static size_t getFreeListIndex(size_t bytes) {
+
+		assert(bytes >= 0);
+
 		//确保bytes至少为ALIGNMENT
 		bytes = std::max(bytes, ALIGNMENT);
 
