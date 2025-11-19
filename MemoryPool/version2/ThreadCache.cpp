@@ -38,7 +38,7 @@ void* ThreadCache::allocate(size_t size) {
 	}
 }
 
-void* ThreadCache::fetchFromCentralCache(size_t size) {
+void* ThreadCache::fetchFromCentralCache(size_t index) {
 	return nullptr; //暂时不实现
 }
 

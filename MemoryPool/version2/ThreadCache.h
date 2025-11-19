@@ -11,7 +11,7 @@ public:
 
 private:
 	ThreadCache();
-	void* fetchFromCentralCache(size_t size);
+	void* fetchFromCentralCache(size_t index);
 	//bool shouldReturnToCentralCache(size_t size);
 
 

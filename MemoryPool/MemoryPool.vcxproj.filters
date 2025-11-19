@@ -30,6 +30,12 @@
     <ClCompile Include="version2\ThreadCache.cpp">
       <Filter>version2\源文件</Filter>
     </ClCompile>
+    <ClCompile Include="version2\CentralCache.cpp">
+      <Filter>version2\源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="version2\PageCache.cpp">
+      <Filter>version2\源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="version1\HashBucket.h">
@@ -45,6 +51,12 @@
       <Filter>version2\头文件</Filter>
     </ClInclude>
     <ClInclude Include="version2\ThreadCache.h">
+      <Filter>version2\头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="version2\CentralCache.h">
+      <Filter>version2\头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="version2\PageCache.h">
       <Filter>version2\头文件</Filter>
     </ClInclude>
   </ItemGroup>

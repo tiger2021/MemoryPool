@@ -94,15 +94,15 @@ void BenchmarkNew(size_t ntimes, size_t nworks, size_t rounds)
 	printf("%lu个线程并发执行%lu轮次，每轮次malloc&free %lu次，总计花费：%lu ms\n", nworks, rounds, ntimes, total_costtime);
 }
 
-//int main()
-//{
-//	// 设置控制台输入输出为UTF-8编码
-//
-//	initializeMemoryPools(); // 使用内存池接口前一定要先调用该函数
-//	BenchmarkMemoryPool(10000, 10, 100); // 测试内存池
-//	std::cout << "===========================================================================" << std::endl;
-//	std::cout << "===========================================================================" << std::endl;
-//	BenchmarkNew(10000, 10, 100); // 测试 new delete
-//
-//	return 0;
-//}
+int main()
+{
+	// 设置控制台输入输出为UTF-8编码
+
+	initializeMemoryPools(); // 使用内存池接口前一定要先调用该函数
+	BenchmarkMemoryPool(10000, 10, 100); // 测试内存池
+	std::cout << "===========================================================================" << std::endl;
+	std::cout << "===========================================================================" << std::endl;
+	BenchmarkNew(10000, 10, 100); // 测试 new delete
+
+	return 0;
+}
