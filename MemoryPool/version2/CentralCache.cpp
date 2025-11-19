@@ -49,16 +49,34 @@ void* CentralCache::fetchRange(size_t index) {
 			//将res与中心缓存自由链表断开连接
 			*(reinterpret_cast<void**>(res)) = nullptr;
 
+			//更新span的空闲计数
+			SpanTracker* spanTracker = getSpanTracker(res);
+			if (spanTracker) {
+				spanTracker->freeCount.fetch_sub(1);
+			}
+
 		}
 	}catch (...) {
 		//释放锁
 		m_centralFreeListLock[index].clear();
 		throw; //重新抛出异常
 	}
+
+	//释放锁
+	m_centralFreeListLock[index].clear();
+	return res;
 }
 
 
 SpanTracker* CentralCache::getSpanTracker(void* blockAddr) {
-	//暂时不实现
+	
+	for(size_t i=0;i<m_spanNum.load(); ++i) {
+		void* spanAddr = m_spanTrackerArray[i].spanAddr.load();
+		size_t numPages = m_spanTrackerArray[i].numPages.load();
+		if(blockAddr >= spanAddr && blockAddr < static_cast<char*>(spanAddr) + numPages * PAGE_SIZE) {
+			return &m_spanTrackerArray[i];
+		}
+	}
+	//未找到对应的SpanTracker
 	return nullptr;
 }
