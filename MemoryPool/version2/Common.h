@@ -5,8 +5,11 @@
 constexpr size_t ALIGNMENT = 8;   //对齐大小
 constexpr size_t MAX_BYTES = 256 * 1024; //256KB
 constexpr size_t FREE_LIST_NUM = MAX_BYTES / ALIGNMENT; //自由链表数量	
-constexpr size_t MAX_SPAN_NUM = 1024;
+constexpr size_t MAX_SPAN_NUM = 1024;   
 constexpr size_t PAGE_SIZE =4096;  // 4K 页大小
+
+// 每次从PageCache获取span大小（以页为单位）
+constexpr size_t SPAN_PAGES = 8;
 
 //内存块头部信息
 struct BlockHeader {

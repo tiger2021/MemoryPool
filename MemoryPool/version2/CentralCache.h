@@ -17,12 +17,15 @@ public:
 	static CentralCache& getInstance();
 
 	//向ThreadCache提供分配内存块接口
-	void* fetchRange(size_t index);
+	void* fetchRange(size_t index,size_t batchNum);
 private:
 	CentralCache();
 
 	// 获取span信息
 	SpanTracker* getSpanTracker(void* blockAddr);
+
+	//从PageCache获取span
+	void* fetchFromPageCache(size_t size);
 
 private:
 	//中心缓存的自由链表

@@ -12,7 +12,11 @@ public:
 private:
 	ThreadCache();
 	void* fetchFromCentralCache(size_t index);
+
+	//批量获取内存块的数量
+	size_t getBatchBlockNum(size_t size);
 	//bool shouldReturnToCentralCache(size_t size);
+
 
 
 private:
