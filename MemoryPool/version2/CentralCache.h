@@ -18,6 +18,8 @@ public:
 
 	//向ThreadCache提供分配内存块接口
 	void* fetchRange(size_t index,size_t batchNum);
+	//向ThreadCache提供归还内存块接口
+	void returnRange(void* start, size_t size, size_t bytes);
 private:
 	CentralCache();
 

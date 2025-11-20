@@ -144,3 +144,8 @@ void* CentralCache::fetchFromPageCache(size_t size) {
 
 	return PageCache::getInstance().allocateSpan(totalPages);
 }
+
+
+void CentralCache::returnRange(void* start, size_t size, size_t bytes) {
+	
+}

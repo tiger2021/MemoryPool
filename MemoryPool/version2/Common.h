@@ -8,6 +8,9 @@ constexpr size_t FREE_LIST_NUM = MAX_BYTES / ALIGNMENT; //自由链表数量
 constexpr size_t MAX_SPAN_NUM = 1024;   
 constexpr size_t PAGE_SIZE =4096;  // 4K 页大小
 
+// 线程本地缓存中单个大小类内存块的最大数量阈值，超过则归还给中心缓存
+constexpr size_t THREAD_FREE_BLOCK_THRESHOLD = 64;  
+
 // 每次从PageCache获取span大小（以页为单位）
 constexpr size_t SPAN_PAGES = 8;
 
