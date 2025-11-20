@@ -1,5 +1,6 @@
 #include "CentralCache.h"
 #include <thread>
+#include "PageCache.h"
 
 CentralCache& CentralCache::getInstance() {
 	static CentralCache instance;
@@ -133,5 +134,13 @@ SpanTracker* CentralCache::getSpanTracker(void* blockAddr) {
 }
 
 void* CentralCache::fetchFromPageCache(size_t size) {
-	return nullptr; //暂不实现
+	//计算实际需要的页数
+	size_t totalPages = (size + PAGE_SIZE - 1) / PAGE_SIZE; //向上取整
+
+	if(totalPages < SPAN_PAGES) {
+		// 小于等于32KB的请求，使用固定8页
+		totalPages = SPAN_PAGES;
+	}
+
+	return PageCache::getInstance().allocateSpan(totalPages);
 }
