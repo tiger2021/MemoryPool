@@ -1,5 +1,6 @@
 #include "ThreadCache.h"
 #include "CentralCache.h"
+#include <iostream>
 
 ThreadCache* ThreadCache::getInstance() {
 	//表示每一个线程都拥有instance的一个实例拷贝
@@ -14,7 +15,7 @@ ThreadCache::ThreadCache() {
 }
 
 void* ThreadCache::allocate(size_t size) {
-	assert(size > =0);
+	assert(size >=0);
 
 	size = size == 0 ? ALIGNMENT : size;
 
@@ -35,7 +36,7 @@ void* ThreadCache::allocate(size_t size) {
 		return ret;
 	} else {
 		//线程本地自由链表未命中，从CentralCache获取
-		return fetchFromCentralCache(size);
+		return fetchFromCentralCache(index);
 	}
 }
 
@@ -46,6 +47,7 @@ void* ThreadCache::fetchFromCentralCache(size_t index) {
 	//从中心缓存批量获取内存块
 	void* ret = CentralCache::getInstance().fetchRange(index, batchNum);
 
+
 	//获取失败
 	if(!ret) {
 		return nullptr;
@@ -53,6 +55,7 @@ void* ThreadCache::fetchFromCentralCache(size_t index) {
 
 	//第一个内存块返回给调用者，剩余的插入到线程本地自由链表
 	void* current = *(reinterpret_cast<void**>(ret));
+	
 	*(reinterpret_cast<void**>(ret)) = nullptr;
 
 	//更新自由链表头部
@@ -151,16 +154,17 @@ void ThreadCache::returnToCentralCache(void* start, size_t size) {
 	if (splitNode) {
 		//将要保留的部分和要归还的部分断开
 		void* returnStart = *(reinterpret_cast<void**>(splitNode));
+
 		*(reinterpret_cast<void**>(splitNode)) = nullptr;
 
 		//更新ThreadCache中的自由链表头部
 		m_freeList[index] = start;
 		//更新ThreadCache中的自由链表块数量统计
 		m_freeListBlockNumArray[index] = blocksToKeep;
-
+		
 		//归还内存块给中心缓存
 		if (blocksToKeep > 0 && returnStart != nullptr) {
-			//暂时先不写
+			CentralCache::getInstance().returnRange(returnStart,alignedSize*blocksToReturn,index);
 		}
 	}
 }

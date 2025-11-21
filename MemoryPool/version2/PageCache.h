@@ -18,6 +18,9 @@ public:
 
 	//向CentralCache提供分配span接口
 	void* allocateSpan(size_t pageNum);
+
+	// 释放span
+	void deallocateSpan(void* ptr, size_t pageNum);
 	
 
 private:
@@ -30,7 +33,7 @@ private:
 	std::map<size_t, Span*> m_freeSpansMap;
 
 	// 页号到span的映射，用于回收
-	std::map<void*, Span*> m_pageToSpanMap;
+	std::map<void*, Span*> m_pageAddrToSpanMap;
 	std::mutex m_mutex; 
 
 };

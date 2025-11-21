@@ -1,6 +1,10 @@
 #include "CentralCache.h"
 #include <thread>
 #include "PageCache.h"
+#include <iostream>
+#include <set>
+
+const std::chrono::milliseconds CentralCache::MAX_DELAY_INTERVAL{ 1000 };
 
 CentralCache& CentralCache::getInstance() {
 	static CentralCache instance;
@@ -21,7 +25,7 @@ CentralCache::CentralCache() {
 }
 
 void* CentralCache::fetchRange(size_t index,size_t batchNum) {
-	assert(index> =0);
+	assert(index>=0);
 
 	//申请内存过大，应该直接向操作系统申请
 	if(index>= FREE_LIST_NUM) {
@@ -51,6 +55,14 @@ void* CentralCache::fetchRange(size_t index,size_t batchNum) {
 				//获取下一个节点
 				current = *(reinterpret_cast<void**>(current)); 
 				++blockCount;
+
+				// 更新span的空闲计数
+				//一次批量分给ThreadCache的内存块不一定在同一个Span中
+				SpanTracker* spanTracker = getSpanTracker(prev);
+				if (spanTracker) {
+					//在该span中减少一个空闲内存块
+					spanTracker->freeCount.fetch_sub(1);
+				}
 			}
 
 			if(prev){
@@ -75,11 +87,18 @@ void* CentralCache::fetchRange(size_t index,size_t batchNum) {
 				return nullptr;
 			}
 
+			// 计算实际分配的页数
+			size_t numPages = (size <= SPAN_PAGES * PAGE_SIZE) ?
+				SPAN_PAGES : (size + PAGE_SIZE - 1) / PAGE_SIZE;
+			
+			// 使用实际页数计算块数
+			size_t totalBlockNum = (numPages * PAGE_SIZE) / size;
+
+			//实际分配的内存块数量不一定等于batchNum
+			size_t allocBlockNum = std::min(batchNum, totalBlockNum);
+
 			//将从PageCache获取的内存块切分成小块
 			char* start = static_cast<char*>(returnHead);
-			//实际分配的内存块数量不一定等于batchNum
-			size_t totalBlockNum = (SPAN_PAGES*PAGE_SIZE) / size; 
-			size_t allocBlockNum = std::min(batchNum, totalBlockNum);
 
 			// 构建返回给ThreadCache的内存块链表
 			if (allocBlockNum > 1) {
@@ -90,7 +109,8 @@ void* CentralCache::fetchRange(size_t index,size_t batchNum) {
 					void* nextBlock = start + i * size;
 					*(reinterpret_cast<void**>(currentBlock)) = nextBlock;
 				}
-				*(reinterpret_cast<void**>(start + (allocBlockNum - 1) * size)) = nullptr;
+				void* lastReturned = start + (allocBlockNum - 1) * size;
+				*(reinterpret_cast<void**>(lastReturned)) = nullptr;
 			}
 
 			// 构建保留在CentralCache的链表
@@ -106,7 +126,16 @@ void* CentralCache::fetchRange(size_t index,size_t batchNum) {
 				m_centralFreeList[index].store(centralHead);
 			}
 
-
+			// 使用无锁方式记录span信息
+			size_t trackerIndex = m_spanNum++;
+			if (trackerIndex <m_spanTrackerArray.size())
+			{
+				m_spanTrackerArray[trackerIndex].spanAddr.store(start);
+				m_spanTrackerArray[trackerIndex].numPages.store(numPages);
+				m_spanTrackerArray[trackerIndex].blockCount.store(totalBlockNum); // 共分配了totalBlockNum个内存块
+				m_spanTrackerArray[trackerIndex].freeCount.store(totalBlockNum-allocBlockNum); //已经分配出去了allocBlockNum个内存块
+			}
+		
 		}
 	}catch (...) {
 		//释放锁
@@ -121,7 +150,7 @@ void* CentralCache::fetchRange(size_t index,size_t batchNum) {
 
 
 SpanTracker* CentralCache::getSpanTracker(void* blockAddr) {
-	
+	//遍历spanTrackers_数组，找到内存块所属的span
 	for(size_t i=0;i<m_spanNum.load(); ++i) {
 		void* spanAddr = m_spanTrackerArray[i].spanAddr.load();
 		size_t numPages = m_spanTrackerArray[i].numPages.load();
@@ -146,6 +175,143 @@ void* CentralCache::fetchFromPageCache(size_t size) {
 }
 
 
-void CentralCache::returnRange(void* start, size_t size, size_t bytes) {
-	
+void CentralCache::returnRange(void* start, size_t size, size_t index) {
+	if (!start || size<0 || index>FREE_LIST_NUM)
+		return;
+	//返回的单个内存块的大小
+	size_t alignedBlockSize = (index + 1) * ALIGNMENT;
+
+	//返回了多少个内存块
+	size_t blockNum = size / alignedBlockSize;
+
+	//自旋锁
+	while (m_centralFreeListLock[index].test_and_set()) {
+		std::this_thread::yield();
+	}
+
+	try {
+		//将归还的链表链接到中心缓存的自由链表
+		void* end = start;
+		size_t count = 1;
+		SpanTracker* spanTracker = nullptr;
+		while (*(reinterpret_cast<void**>(end)) != nullptr && count < blockNum) {
+			//更新归还内存块对应的span的空闲块数
+			spanTracker = getSpanTracker(end);
+
+			if (spanTracker) {
+				++(spanTracker->freeCount);
+			}
+			else {
+				std::cout << "spanTracker指针为空!" <<std::endl;
+			}
+
+			end = *(reinterpret_cast<void**>(end));
+			++count;
+		}
+
+		//更新最后一个归还内存块对应的span的空闲块数
+		spanTracker = getSpanTracker(end);
+		if (spanTracker) {
+			++(spanTracker->freeCount);
+		}else {
+			std::cout << "spanTracker指针为空!" << std::endl;
+		}
+
+		//头插法归还
+		*(reinterpret_cast<void**>(end)) = m_centralFreeList[index].load();
+		m_centralFreeList[index].store(start);
+
+		// 2. 更新延迟计数(这儿的加1还有疑惑)
+		size_t currentCount = m_delayCountsArray[index].fetch_add(1) +1;
+		auto currentTime = std::chrono::steady_clock::now();
+
+		// 3. 检查是否需要执行延迟归还
+		if (shouldPerformDelayedReturn(index, currentCount, currentTime))
+		{
+			performDelayedReturn(index);
+		}
+	}
+	catch (...) {
+		m_centralFreeListLock[index].clear();
+		throw;
+	}
+	m_centralFreeListLock[index].clear();
+
+}
+
+bool CentralCache::shouldPerformDelayedReturn(size_t index, size_t currentCount, std::chrono::steady_clock::time_point currentTime) {
+	//
+	if (currentCount >= MAX_DELAY_COUNT) {
+		return true;
+	}
+
+	auto lastReturnTime = m_lastReturnTimeArray[index];
+	return (currentTime - lastReturnTime) >= MAX_DELAY_INTERVAL;
+}
+
+void CentralCache::performDelayedReturn(size_t index) {
+	// 重置延迟计数
+	m_delayCountsArray[index].store(0);
+
+	// 更新最后归还时间
+	m_lastReturnTimeArray[index] = std::chrono::steady_clock::now();
+
+	// 统计与归还块相关联的span
+	std::set<SpanTracker*> spanFreeSet;
+	void* currentBlock = m_centralFreeList[index].load();
+
+	while (currentBlock)
+	{
+		SpanTracker* spanTracker = getSpanTracker(currentBlock);
+		if (spanTracker)
+		{
+			//将spanTracker存放到set中
+			spanFreeSet.insert(spanTracker);
+		}
+		currentBlock = *reinterpret_cast<void**>(currentBlock);
+	}
+
+	// 更新每个span的空闲计数并检查是否可以归还
+	for (auto tracker : spanFreeSet)
+	{
+		if (tracker) {
+			if ((tracker->blockCount.load()) <= (tracker->freeCount.load())) {
+				returnSpanToPageCache(tracker,index);
+			}
+		}
+	}
+}
+
+void CentralCache::returnSpanToPageCache(SpanTracker* spanTracker,size_t index) {
+	assert(spanTracker);
+
+	void* spanAddr = spanTracker->spanAddr.load();
+	size_t pageNum = spanTracker->numPages.load();
+
+	//从自由链表中移除这些块
+	void* head = m_centralFreeList[index].load();
+	void* newHead = nullptr;
+	void* prev = nullptr;
+	void* current = head;
+
+	while (current) {
+		void* next = *(reinterpret_cast<void**>(current));
+		if (current >= spanAddr && current < (static_cast<char*>(spanAddr) + pageNum * PAGE_SIZE)) {
+			if (prev) {
+				*(reinterpret_cast<void**>(prev)) = next;
+			}else {
+				newHead = next;
+			}
+		}
+		else {
+			prev = current;
+		}
+		current = next;
+	}
+
+	//自由链表的第一个内存块被回收了
+	if (newHead) {
+		m_centralFreeList[index].store(newHead);
+	}
+	PageCache::getInstance().deallocateSpan(spanAddr, pageNum);
 }

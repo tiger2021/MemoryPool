@@ -124,11 +124,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="UnitTest.cpp" />
     <ClCompile Include="version1\MemoryPool.cpp" />
     <ClCompile Include="version2\CentralCache.cpp" />
     <ClCompile Include="version2\PageCache.cpp" />
     <ClCompile Include="version2\ThreadCache.cpp" />
+    <ClCompile Include="version2\UnitTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="version1\HashBucket.h" />
@@ -136,6 +136,7 @@
     <ClInclude Include="version1\MemoryPoolInterface.h" />
     <ClInclude Include="version2\CentralCache.h" />
     <ClInclude Include="version2\Common.h" />
+    <ClInclude Include="version2\MemoryPool.h" />
     <ClInclude Include="version2\PageCache.h" />
     <ClInclude Include="version2\ThreadCache.h" />
   </ItemGroup>
