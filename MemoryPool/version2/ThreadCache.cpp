@@ -1,6 +1,7 @@
 #include "ThreadCache.h"
 #include "CentralCache.h"
 #include <iostream>
+#include <thread>
 
 ThreadCache* ThreadCache::getInstance() {
 	//表示每一个线程都拥有instance的一个实例拷贝
@@ -24,6 +25,7 @@ void* ThreadCache::allocate(size_t size) {
 		return malloc(size);
 	}
 	size_t index = SizeClass::getFreeListIndex(size);
+	//std::cout << "allocate::index="<< index <<std::endl;
 	void* ret = m_freeList[index];
 	if (ret) {
 		//线程本地自由链表命中
@@ -41,6 +43,7 @@ void* ThreadCache::allocate(size_t size) {
 }
 
 void* ThreadCache::fetchFromCentralCache(size_t index) {
+
 
 	size_t batchNum = getBatchBlockNum((index + 1) * ALIGNMENT);
 	
@@ -61,9 +64,11 @@ void* ThreadCache::fetchFromCentralCache(size_t index) {
 	//更新自由链表头部
 	m_freeList[index] = current;
 
+	//std::cout << "current=0x" << std::hex << reinterpret_cast<uintptr_t>(current) << std::dec << std::endl;
 	//计算当前自由链表中该大小的内存块有多少
 	size_t blockNum = 0;
 	while (current) {
+		//std::cout << "" << std::this_thread::get_id() << " ThreadCache fetchFromCentralCache index=" << index << " current=0x" << std::hex << reinterpret_cast<uintptr_t>(current) << std::dec << std::endl;
 		++blockNum;
 		current = *(reinterpret_cast<void**>(current));
 	}

@@ -28,9 +28,10 @@ void* CentralCache::fetchRange(size_t index,size_t batchNum) {
 	assert(index>=0);
 
 	//申请内存过大，应该直接向操作系统申请
-	if(index>= FREE_LIST_NUM) {
+	assert(index < FREE_LIST_NUM);
+	/*if(index>= FREE_LIST_NUM) {
 		return nullptr;
-	}
+	}*/
 
 	//自旋等待获取锁
 	while (m_centralFreeListLock[index].test_and_set()) {
@@ -101,28 +102,22 @@ void* CentralCache::fetchRange(size_t index,size_t batchNum) {
 			char* start = static_cast<char*>(returnHead);
 
 			// 构建返回给ThreadCache的内存块链表
-			if (allocBlockNum > 1) {
-				// 确保至少有两个块才构建链表
-				// 构建链表
-				for (size_t i = 1; i < allocBlockNum; ++i) {
-					void* currentBlock = start + (i - 1) * size;
-					void* nextBlock = start + i * size;
-					*(reinterpret_cast<void**>(currentBlock)) = nextBlock;
-				}
-				void* lastReturned = start + (allocBlockNum - 1) * size;
-				*(reinterpret_cast<void**>(lastReturned)) = nullptr;
+			for (size_t i = 0; i < allocBlockNum; ++i) {
+				void* cur = start + i * size;
+				void* next = (i + 1 < allocBlockNum) ? (start + (i + 1) * size) : nullptr;
+				*(reinterpret_cast<void**>(cur)) = next;
 			}
+			returnHead = start;
 
 			// 构建保留在CentralCache的链表
-			if(totalBlockNum> allocBlockNum) {
+			// 构建中央缓存链表
+			if (totalBlockNum > allocBlockNum) {
 				void* centralHead = start + allocBlockNum * size;
-				for (size_t i = allocBlockNum + 1; i < totalBlockNum; ++i) {
-					void* currentBlock = start + (i - 1) * size;
-					void* nextBlock = start + i * size;
-					*(reinterpret_cast<void**>(currentBlock)) = nextBlock;
+				for (size_t i = allocBlockNum; i < totalBlockNum; ++i) {
+					void* cur = start + i * size;
+					void* next = (i + 1 < totalBlockNum) ? (start + (i + 1) * size) : nullptr;
+					*(reinterpret_cast<void**>(cur)) = next;
 				}
-				*(reinterpret_cast<void**>(start + (totalBlockNum - 1) * size)) = nullptr;
-				//将多余的内存块插入到中心缓存的自由链表中
 				m_centralFreeList[index].store(centralHead);
 			}
 
@@ -250,6 +245,10 @@ bool CentralCache::shouldPerformDelayedReturn(size_t index, size_t currentCount,
 }
 
 void CentralCache::performDelayedReturn(size_t index) {
+
+	while (m_centralFreeListLock[index].test_and_set()) {
+		std::this_thread::yield();
+	}
 	// 重置延迟计数
 	m_delayCountsArray[index].store(0);
 
@@ -280,6 +279,7 @@ void CentralCache::performDelayedReturn(size_t index) {
 			}
 		}
 	}
+	m_centralFreeListLock[index].clear();
 }
 
 void CentralCache::returnSpanToPageCache(SpanTracker* spanTracker,size_t index) {
@@ -287,6 +287,10 @@ void CentralCache::returnSpanToPageCache(SpanTracker* spanTracker,size_t index) 
 
 	void* spanAddr = spanTracker->spanAddr.load();
 	size_t pageNum = spanTracker->numPages.load();
+
+	while (m_centralFreeListLock[index].test_and_set()) {
+		std::this_thread::yield();
+	}
 
 	//从自由链表中移除这些块
 	void* head = m_centralFreeList[index].load();
@@ -314,4 +318,6 @@ void CentralCache::returnSpanToPageCache(SpanTracker* spanTracker,size_t index) 
 		m_centralFreeList[index].store(newHead);
 	}
 	PageCache::getInstance().deallocateSpan(spanAddr, pageNum);
+
+	m_centralFreeListLock[index].clear();
 }
